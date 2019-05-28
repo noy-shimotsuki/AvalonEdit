@@ -64,7 +64,8 @@ namespace ICSharpCode.AvalonEdit.Rendering
 						return run;
 					}
 				}
-				if (TextView.Options.ShowEndOfLine && textSourceCharacterIndex == VisualLine.VisualLength) {
+				int delimiterLength = VisualLine.LastDocumentLine.DelimiterLength;
+				if ((TextView.Options.ShowEndOfLine && delimiterLength > 0 || TextView.Options.ShowEndOfFile && delimiterLength == 0) && textSourceCharacterIndex == VisualLine.VisualLength) {
 					return CreateTextRunForNewLine();
 				}
 				return new TextEndOfParagraph(1);
@@ -79,19 +80,21 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			string newlineText = "";
 			DocumentLine lastDocumentLine = VisualLine.LastDocumentLine;
 			if (lastDocumentLine.DelimiterLength == 2) {
-				newlineText = "¶";
+				newlineText = TextView.Options.EndOfLineCrLfText;
 			} else if (lastDocumentLine.DelimiterLength == 1) {
 				char newlineChar = Document.GetCharAt(lastDocumentLine.Offset + lastDocumentLine.Length);
 				if (newlineChar == '\r')
-					newlineText = "\\r";
+					newlineText = TextView.Options.EndOfLineCrText;
 				else if (newlineChar == '\n')
-					newlineText = "\\n";
+					newlineText = TextView.Options.EndOfLineLfText;
 				else
 					newlineText = "?";
+			} else if (lastDocumentLine.DelimiterLength == 0) {
+				newlineText = TextView.Options.EndOfFileText;
 			}
-			return new FormattedTextRun(new FormattedTextElement(TextView.cachedElements.GetTextForNonPrintableCharacter(newlineText, this), 0), GlobalTextRunProperties);
+			return new EndOfLineTextRun(new FormattedTextElement(TextView.cachedElements.GetTextForNonPrintableCharacter(newlineText, this), 0), GlobalTextRunProperties);
 		}
-		
+
 		public override TextSpan<CultureSpecificCharacterBufferRange> GetPrecedingText(int textSourceCharacterIndexLimit)
 		{
 			try {
@@ -133,6 +136,20 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			}
 			cachedStringOffset = offset;
 			return new StringSegment(cachedString = this.Document.GetText(offset, length));
+		}
+
+		sealed class EndOfLineTextRun : FormattedTextRun
+		{
+			public EndOfLineTextRun(FormattedTextElement element, TextRunProperties properties)
+				: base(element, properties)
+			{
+			}
+
+			public override TextEmbeddedObjectMetrics Format(double remainingParagraphWidth)
+			{
+				TextEmbeddedObjectMetrics metrics = base.Format(remainingParagraphWidth);
+				return new TextEmbeddedObjectMetrics(0, metrics.Height, metrics.Baseline);
+			}
 		}
 	}
 }

@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -43,7 +44,12 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		/// Gets/Sets whether to show · for spaces.
 		/// </summary>
 		public bool ShowSpaces { get; set; }
-		
+
+		/// <summary>
+		/// Gets/Sets whether to show □ for spaces.
+		/// </summary>
+		public bool ShowFullWidthSpaces { get; set; }
+
 		/// <summary>
 		/// Gets/Sets whether to show » for tabs.
 		/// </summary>
@@ -53,22 +59,45 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		/// Gets/Sets whether to show a box with the hex code for control characters.
 		/// </summary>
 		public bool ShowBoxForControlCharacters { get; set; }
-		
+
+		/// <summary>
+		/// Gets/Sets the text of one space character.
+		/// </summary>
+		public string SpaceText { get; set; }
+
+		/// <summary>
+		/// Gets/Sets the text of one tab character.
+		/// </summary>
+		public string TabText { get; set; }
+
+		/// <summary>
+		/// Gets/Sets the text of one full-width space character.
+		/// </summary>
+		public string FullWidthSpaceText { get; set; }
+
 		/// <summary>
 		/// Creates a new SingleCharacterElementGenerator instance.
 		/// </summary>
 		public SingleCharacterElementGenerator()
 		{
 			this.ShowSpaces = true;
+			this.ShowFullWidthSpaces = true;
 			this.ShowTabs = true;
 			this.ShowBoxForControlCharacters = true;
+			this.SpaceText = "\u00B7";
+			this.TabText = "\u00BB";
+			this.FullWidthSpaceText = "\u25A1";
 		}
 		
 		void IBuiltinElementGenerator.FetchOptions(TextEditorOptions options)
 		{
 			this.ShowSpaces = options.ShowSpaces;
+			this.ShowFullWidthSpaces = options.ShowFullWidthSpaces;
 			this.ShowTabs = options.ShowTabs;
 			this.ShowBoxForControlCharacters = options.ShowBoxForControlCharacters;
+			this.SpaceText = options.SpaceText;
+			this.TabText = options.TabText;
+			this.FullWidthSpaceText = options.FullWidthSpaceText;
 		}
 		
 		public override int GetFirstInterestedOffset(int startOffset)
@@ -81,6 +110,10 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				switch (c) {
 					case ' ':
 						if (ShowSpaces)
+							return startOffset + i;
+						break;
+					case '\u3000':
+						if (ShowFullWidthSpaces)
 							return startOffset + i;
 						break;
 					case '\t':
@@ -101,9 +134,13 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		{
 			char c = CurrentContext.Document.GetCharAt(offset);
 			if (ShowSpaces && c == ' ') {
-				return new SpaceTextElement(CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter("\u00B7", CurrentContext));
+				return new SpaceTextElement(CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter(StringInfo.GetNextTextElement(SpaceText), CurrentContext),
+					CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter(StringInfo.GetNextTextElement(" "), CurrentContext));
+			} else if (ShowFullWidthSpaces && c == '\u3000') {
+				return new SpaceTextElement(CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter(StringInfo.GetNextTextElement(FullWidthSpaceText), CurrentContext),
+					CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter(StringInfo.GetNextTextElement("\u3000"), CurrentContext));
 			} else if (ShowTabs && c == '\t') {
-				return new TabTextElement(CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter("\u00BB", CurrentContext));
+				return new TabTextElement(CurrentContext.TextView.cachedElements.GetTextForNonPrintableCharacter(StringInfo.GetNextTextElement(TabText), CurrentContext));
 			} else if (ShowBoxForControlCharacters && char.IsControl(c)) {
 				var p = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
 				p.SetForegroundBrush(Brushes.White);
@@ -116,14 +153,22 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			}
 		}
 		
-		sealed class SpaceTextElement : FormattedTextElement
+		sealed class SpaceTextElement : VisualLineElement
 		{
-			public SpaceTextElement(TextLine textLine) : base(textLine, 1)
+			internal readonly TextLine text;
+			internal readonly TextLine space;
+
+			public SpaceTextElement(TextLine text, TextLine space) : base(1, 1)
 			{
-				BreakBefore = LineBreakCondition.BreakPossible;
-				BreakAfter = LineBreakCondition.BreakDesired;
+				this.text = text;
+				this.space = space;
 			}
-			
+
+			public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
+			{
+				return new SpaceGlyphRun(this, this.TextRunProperties);
+			}
+
 			public override int GetNextCaretPosition(int visualColumn, LogicalDirection direction, CaretPositioningMode mode)
 			{
 				if (mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint)
@@ -137,7 +182,68 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				return true;
 			}
 		}
-		
+
+		sealed class SpaceGlyphRun : TextEmbeddedObject
+		{
+			readonly SpaceTextElement element;
+			TextRunProperties properties;
+
+			public SpaceGlyphRun(SpaceTextElement element, TextRunProperties properties)
+			{
+				if (properties == null)
+					throw new ArgumentNullException("properties");
+				this.properties = properties;
+				this.element = element;
+			}
+
+			public override LineBreakCondition BreakBefore
+			{
+				get { return LineBreakCondition.BreakPossible; }
+			}
+
+			public override LineBreakCondition BreakAfter
+			{
+				get { return LineBreakCondition.BreakDesired; }
+			}
+
+			public override bool HasFixedSize
+			{
+				get { return true; }
+			}
+
+			public override CharacterBufferReference CharacterBufferReference
+			{
+				get { return new CharacterBufferReference(); }
+			}
+
+			public override int Length
+			{
+				get { return 1; }
+			}
+
+			public override TextRunProperties Properties
+			{
+				get { return properties; }
+			}
+
+			public override TextEmbeddedObjectMetrics Format(double remainingParagraphWidth)
+			{
+				return new TextEmbeddedObjectMetrics(element.space.WidthIncludingTrailingWhitespace, element.text.Height, element.text.Baseline);
+			}
+
+			public override Rect ComputeBoundingBox(bool rightToLeft, bool sideways)
+			{
+				return new Rect(0, 0, element.space.WidthIncludingTrailingWhitespace, element.text.Height);
+			}
+
+			public override void Draw(DrawingContext drawingContext, Point origin, bool rightToLeft, bool sideways)
+			{
+				origin.X += (element.space.WidthIncludingTrailingWhitespace - element.text.WidthIncludingTrailingWhitespace) / 2;
+				origin.Y -= element.text.Baseline;
+				element.text.Draw(drawingContext, origin, InvertAxes.None);
+			}
+		}
+
 		sealed class TabTextElement : VisualLineElement
 		{
 			internal readonly TextLine text;
