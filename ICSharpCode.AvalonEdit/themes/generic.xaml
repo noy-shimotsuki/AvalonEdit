@@ -10,6 +10,6 @@
 	</ResourceDictionary.MergedDictionaries>
 	
 	<Style TargetType="{x:Type editing:LineNumberMargin}">
-		<Setter Property="Control.Cursor" Value="/ICSharpCode.AvalonEdit;component/themes/RightArrow.cur"/>
+		<Setter Property="Control.Cursor" Value="{x:Static editing:LineNumberMargin.RightArrowCursor}"/>
 	</Style>
 </ResourceDictionary>

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.0;net40;net45</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net40;net45;net46</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <DefineConstants>TRACE;DOTNET4</DefineConstants>
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
-    <DefineConstants>TRACE;DOTNET4</DefineConstants>
+    <DefineConstants>TRACE;DOTNET4;DOTNET4_6</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <DefineConstants>TRACE;DOTNET4</DefineConstants>
@@ -38,19 +38,27 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <DefineConstants>TRACE;DOTNET4</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <DefineConstants>TRACE;DOTNET4;DOTNET4_6</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
   <ItemGroup>
     <None Remove="Search\next.png" />
     <None Remove="Search\prev.png" />
     <None Remove="themes\RightArrow.cur" />
+    <None Remove="themes\RightArrow_high.cur" />
     <Resource Include="Search\next.png" />
     <Resource Include="Search\prev.png" />
     <Resource Include="themes\RightArrow.cur" />
+    <Resource Include="themes\RightArrow_high.cur" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Highlighting\Resources\*" />

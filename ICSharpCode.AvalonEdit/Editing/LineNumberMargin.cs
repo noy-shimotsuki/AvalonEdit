@@ -36,6 +36,15 @@ namespace ICSharpCode.AvalonEdit.Editing
 	/// </summary>
 	public class LineNumberMargin : AbstractMargin, IWeakEventListener
 	{
+		/// <summary>
+		/// RightArrow.cur
+		/// </summary>
+#if DOTNET4_6
+		public static readonly Cursor RightArrowCursor = new Cursor(Application.GetResourceStream(new Uri("/ICSharpCode.AvalonEdit;component/themes/RightArrow_high.cur", UriKind.Relative)).Stream, true);
+#else
+		public static readonly Cursor RightArrowCursor = new Cursor(Application.GetResourceStream(new Uri("/ICSharpCode.AvalonEdit;component/themes/RightArrow.cur", UriKind.Relative)).Stream);
+#endif
+
 		static LineNumberMargin()
 		{
 			DefaultStyleKeyProperty.OverrideMetadata(typeof(LineNumberMargin),
