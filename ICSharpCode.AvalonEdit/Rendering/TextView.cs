@@ -295,6 +295,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		SingleCharacterElementGenerator singleCharacterElementGenerator;
 		LinkElementGenerator linkElementGenerator;
 		MailLinkElementGenerator mailLinkElementGenerator;
+		ColorFontElementGenerator emojiCharacterElementGenerator;
 		
 		void UpdateBuiltinElementGeneratorsFromOptions()
 		{
@@ -302,6 +303,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			
 //			AddRemoveDefaultElementGeneratorOnDemand(ref newLineElementGenerator, options.ShowEndOfLine);
 			AddRemoveDefaultElementGeneratorOnDemand(ref singleCharacterElementGenerator, options.ShowBoxForControlCharacters || options.ShowSpaces || options.ShowFullWidthSpaces || options.ShowTabs);
+			AddRemoveDefaultElementGeneratorOnDemand(ref emojiCharacterElementGenerator, options.EnableColorFont);
 			AddRemoveDefaultElementGeneratorOnDemand(ref linkElementGenerator, options.EnableHyperlinks);
 			AddRemoveDefaultElementGeneratorOnDemand(ref mailLinkElementGenerator, options.EnableEmailHyperlinks);
 		}

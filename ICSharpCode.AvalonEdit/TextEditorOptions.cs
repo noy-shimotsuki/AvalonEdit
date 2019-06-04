@@ -582,6 +582,22 @@ namespace ICSharpCode.AvalonEdit
 				}
 			}
 		}
+
+		bool enableColorFont = true;
+
+		/// <summary>
+		/// Gets/Sets whether to enable color font in the editor.
+		/// </summary>
+		[DefaultValue(true)]
+		public virtual bool EnableColorFont {
+			get { return enableColorFont; }
+			set {
+				if (enableColorFont != value) {
+					enableColorFont = value;
+					OnPropertyChanged("EnableColorFont");
+				}
+			}
+		}
 		
 		bool showColumnRuler = false;
 		
