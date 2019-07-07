@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -28,10 +29,11 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		{
 			EmojiTypeface emojiTypeface;
 			string value;
-			int matchOffset = GetColorGlyphOffset(offset, out emojiTypeface, out value);
+			TextLine textLine;
+			int matchOffset = GetColorGlyphOffset(offset, out emojiTypeface, out value, out textLine);
 			if (emojiTypeface != null && matchOffset == offset)
 			{
-				return new ColorFontElement(value, emojiTypeface);
+				return new ColorFontElement(value, emojiTypeface, textLine);
 			}
 			else
 			{
@@ -41,7 +43,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 
 		public override int GetFirstInterestedOffset(int startOffset)
 		{
-			return GetColorGlyphOffset(startOffset, out _, out _);
+			return GetColorGlyphOffset(startOffset, out _, out _, out _);
 		}
 
 		void IBuiltinElementGenerator.FetchOptions(TextEditorOptions options)
@@ -49,14 +51,25 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		}
 
 		static IDictionary<GlyphTypeface, EmojiTypeface> emojiTypefaceCache = new Dictionary<GlyphTypeface, EmojiTypeface>();
+		Lazy<TextFormatter> formatter;
+		TextLineCache previousTextLine;
 
-		int GetColorGlyphOffset(int startOffset, out EmojiTypeface emojiTypeface, out string value)
+		public ColorFontElementGenerator()
+		{
+			formatter = new Lazy<TextFormatter>(() => TextFormatter.Create(TextOptions.GetTextFormattingMode(CurrentContext.TextView)));
+		}
+
+		int GetColorGlyphOffset(int startOffset, out EmojiTypeface emojiTypeface, out string value, out TextLine textLine)
 		{
 			int endOffset = CurrentContext.VisualLine.LastDocumentLine.EndOffset;
 			StringSegment relevantText = CurrentContext.GetText(startOffset, endOffset - startOffset);
-			TextFormatter formatter = TextFormatter.Create(TextOptions.GetTextFormattingMode(CurrentContext.TextView));
-			TextLine textLine = FormattedTextElement.PrepareText(formatter, relevantText.Text.Substring(relevantText.Offset, relevantText.Count), CurrentContext.GlobalTextRunProperties);
-			foreach (IndexedGlyphRun indexedGlyphRun in textLine.GetIndexedGlyphRuns())
+			textLine = previousTextLine.Text == relevantText.Text ?
+				previousTextLine.TextLine : FormattedTextElement.PrepareText(formatter.Value, relevantText.Text, CurrentContext.GlobalTextRunProperties);
+			previousTextLine = new TextLineCache {Text = relevantText.Text, TextLine = textLine};
+
+			foreach (IndexedGlyphRun indexedGlyphRun in textLine.GetIndexedGlyphRuns()
+				.Where(x => x.TextSourceCharacterIndex >= relevantText.Offset && x.TextSourceCharacterIndex + x.TextSourceLength <= relevantText.Offset + relevantText.Count ||
+				            x.TextSourceCharacterIndex < relevantText.Offset && x.TextSourceCharacterIndex + x.TextSourceLength > relevantText.Offset))
 			{
 				GlyphTypeface glyphTypeface = indexedGlyphRun.GlyphRun.GlyphTypeface;
 				lock (emojiTypefaceCache)
@@ -75,8 +88,9 @@ namespace ICSharpCode.AvalonEdit.Rendering
 
 				if (emojiTypeface != null)
 				{
-					int result = startOffset + indexedGlyphRun.TextSourceCharacterIndex;
-					string characters = relevantText.Text.Substring(relevantText.Offset + indexedGlyphRun.TextSourceCharacterIndex, relevantText.Count - indexedGlyphRun.TextSourceCharacterIndex);
+					int characterIndex = indexedGlyphRun.TextSourceCharacterIndex - relevantText.Offset;
+					int result = characterIndex >= 0 ? startOffset + characterIndex : startOffset;
+					string characters = characterIndex >= 0 ? relevantText.Text.Substring(indexedGlyphRun.TextSourceCharacterIndex, relevantText.Count - characterIndex) : relevantText.Text.Substring(relevantText.Offset, relevantText.Count);
 					GlyphPlanSequence glyphPlanSequence = emojiTypeface.MakeGlyphPlanSequence(characters);
 					if (glyphPlanSequence.Count > 1)
 					{
@@ -104,17 +118,27 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			value = null;
 			return -1;
 		}
+
+		struct TextLineCache
+		{
+			public string Text { get; set; }
+			public TextLine TextLine { get; set; }
+		}
 	}
 
 	sealed class ColorFontElement : VisualLineElement
 	{
 		internal string Value { get; private set; }
-		internal EmojiTypeface EmojiTypeface { get; set; }
+		internal EmojiTypeface EmojiTypeface { get; private set; }
+		internal GlyphPlanSequence GlyphPlanSequence { get; private set; }
+		internal TextLine TextLine { get; private set; }
 
-		public ColorFontElement(string value, EmojiTypeface emojiTypeface) : base(1, value.Length)
+		public ColorFontElement(string value, EmojiTypeface emojiTypeface, TextLine textLine) : base(1, value.Length)
 		{
 			Value = value;
 			EmojiTypeface = emojiTypeface;
+			TextLine = textLine;
+			GlyphPlanSequence = emojiTypeface.MakeGlyphPlanSequence(value ?? string.Empty);
 		}
 
 		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
@@ -182,7 +206,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		public override void Draw(DrawingContext drawingContext, Point origin, bool rightToLeft, bool sideways)
 		{
 			EmojiTypeface typeface = element.EmojiTypeface;
-			GlyphPlanSequence glyphPlanSequence = typeface.MakeGlyphPlanSequence(element.Value ?? string.Empty);
+			GlyphPlanSequence glyphPlanSequence = element.GlyphPlanSequence;
 			double fontSize = Properties.FontRenderingEmSize;
 			double scale = typeface.GetScale(fontSize) * 0.75;
 			if (glyphPlanSequence.Count > 0 && fontSize > 0.0) {
@@ -204,14 +228,12 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		public override TextEmbeddedObjectMetrics Format(double remainingParagraphWidth)
 		{
 			EmojiTypeface typeface = element.EmojiTypeface;
-			var glyphPlanSequence = typeface.MakeGlyphPlanSequence(element.Value ?? "");
-			var fontSize = this.Properties.FontRenderingEmSize;
-			var scale = typeface.GetScale(fontSize) * 0.75;
-			var width = glyphPlanSequence.CalculateWidth() * scale;
+			GlyphPlanSequence glyphPlanSequence = element.GlyphPlanSequence;
+			double fontSize = this.Properties.FontRenderingEmSize;
+			double scale = typeface.GetScale(fontSize) * 0.75;
+			double width = glyphPlanSequence.CalculateWidth() * scale;
 
-			TextFormatter formatter = TextFormatter.Create(TextOptions.GetTextFormattingMode(context.TextView));
-			TextLine textLine = FormattedTextElement.PrepareText(formatter, element.Value, Properties);
-			return new TextEmbeddedObjectMetrics(width, textLine.Height, textLine.Baseline);
+			return new TextEmbeddedObjectMetrics(width, element.TextLine.Height, element.TextLine.Baseline);
 		}
 	}
 }
