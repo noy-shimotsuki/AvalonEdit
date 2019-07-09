@@ -61,8 +61,8 @@ namespace ICSharpCode.AvalonEdit
 			}
 		}
 		#endregion
-
-		#region ShowSpaces / ShowTabs / ShowEndOfLine / ShowBoxForControlCharacters
+		
+		#region ShowSpaces / ShowFullWidthSpaces / ShowTabs / ShowEndOfLine / ShowBoxForControlCharacters / ShowEndOfFile
 		bool showSpaces;
 
 		/// <summary>
@@ -76,6 +76,23 @@ namespace ICSharpCode.AvalonEdit
 				if (showSpaces != value) {
 					showSpaces = value;
 					OnPropertyChanged("ShowSpaces");
+				}
+			}
+		}
+
+		bool showFullWidthSpaces;
+
+		/// <summary>
+		/// Gets/Sets whether to show □ for full-width spaces.
+		/// </summary>
+		/// <remarks>The default value is <c>false</c>.</remarks>
+		[DefaultValue(false)]
+		public virtual bool ShowFullWidthSpaces {
+			get { return showFullWidthSpaces; }
+			set {
+				if (showFullWidthSpaces != value) {
+					showFullWidthSpaces = value;
+					OnPropertyChanged("ShowFullWidthSpaces");
 				}
 			}
 		}
@@ -127,6 +144,23 @@ namespace ICSharpCode.AvalonEdit
 				if (showBoxForControlCharacters != value) {
 					showBoxForControlCharacters = value;
 					OnPropertyChanged("ShowBoxForControlCharacters");
+				}
+			}
+		}
+
+		bool showEndOfFile;
+
+		/// <summary>
+		/// Gets/Sets whether to show [EOF] for end-of-file.
+		/// </summary>
+		/// <remarks>The default value is <c>false</c>.</remarks>
+		[DefaultValue(false)]
+		public virtual bool ShowEndOfFile {
+			get { return showEndOfFile; }
+			set {
+				if (showEndOfFile != value) {
+					showEndOfFile = value;
+					OnPropertyChanged("ShowEndOfFile");
 				}
 			}
 		}
@@ -255,6 +289,141 @@ namespace ICSharpCode.AvalonEdit
 				return new string(' ', indentationSize - ((column - 1) % indentationSize));
 			} else {
 				return "\t";
+			}
+		}
+		#endregion
+
+		#region SpaceText / FullWidthSpaceText / TabText / EndOfLineCrLfText / EndOfLineCrText / EndOfLineLfText / EndOfFileText
+		string spaceText = "\u00B7";
+
+		/// <summary>
+		/// Gets/Sets the text of one space character.
+		/// </summary>
+		/// <remarks>The default value is \u00B7 (·).</remarks>
+		[DefaultValue("\u00B7")]
+		public virtual string SpaceText {
+			get { return spaceText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (spaceText != value) {
+					spaceText = value;
+					OnPropertyChanged("SpaceText");
+				}
+			}
+		}
+
+		string fullWidthSpaceText = "\u25A1";
+
+		/// <summary>
+		/// Gets/Sets the text of one full-width space character.
+		/// </summary>
+		/// <remarks>The default value is \u25A1 (□).</remarks>
+		[DefaultValue("\u25A1")]
+		public virtual string FullWidthSpaceText {
+			get { return fullWidthSpaceText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (fullWidthSpaceText != value) {
+					fullWidthSpaceText = value;
+					OnPropertyChanged("FullWidthSpaceText");
+				}
+			}
+		}
+
+		string tabText = "\u00BB";
+
+		/// <summary>
+		/// Gets/Sets the text of one tab character.
+		/// </summary>
+		/// <remarks>The default value is \u00BB (»).</remarks>
+		[DefaultValue("\u00BB")]
+		public virtual string TabText {
+			get { return tabText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (tabText != value) {
+					tabText = value;
+					OnPropertyChanged("TabText");
+				}
+			}
+		}
+
+		string endOfLineCrLfText = "\u21B5";
+
+		/// <summary>
+		/// Gets/Sets the text of end-of-line (CR+LF).
+		/// </summary>
+		/// <remarks>The default value is \u21B5 (↵).</remarks>
+		[DefaultValue("\u21B5")]
+		public virtual string EndOfLineCrLfText {
+			get { return endOfLineCrLfText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (endOfLineCrLfText != value) {
+					endOfLineCrLfText = value;
+					OnPropertyChanged("EndOfLineCrLfText");
+				}
+			}
+		}
+
+		string endOfLineCrText = "\u2190";
+
+		/// <summary>
+		/// Gets/Sets the text of end-of-line (CR).
+		/// </summary>
+		/// <remarks>The default value is \u2190 (←).</remarks>
+		[DefaultValue("\u2190")]
+		public virtual string EndOfLineCrText {
+			get { return endOfLineCrText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (endOfLineCrText != value) {
+					endOfLineCrText = value;
+					OnPropertyChanged("EndOfLineCrText");
+				}
+			}
+		}
+
+		string endOfLineLfText = "\u2193";
+
+		/// <summary>
+		/// Gets/Sets the text of end-of-line (LF).
+		/// </summary>
+		/// <remarks>The default value is \u2193 (↓).</remarks>
+		[DefaultValue("\u2193")]
+		public virtual string EndOfLineLfText {
+			get { return endOfLineLfText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (endOfLineLfText != value) {
+					endOfLineLfText = value;
+					OnPropertyChanged("EndOfLineLfText");
+				}
+			}
+		}
+
+		string endOfFileText = "[EOF]";
+
+		/// <summary>
+		/// Gets/Sets the text of one end-of-file.
+		/// </summary>
+		/// <remarks>The default value is [EOF].</remarks>
+		[DefaultValue("[EOF]")]
+		public virtual string EndOfFileText {
+			get { return endOfFileText; }
+			set {
+				if (value == null)
+					throw new ArgumentNullException("value", "value cannot be null");
+				if (endOfFileText != value) {
+					endOfFileText = value;
+					OnPropertyChanged("EndOfFileText");
+				}
 			}
 		}
 		#endregion
@@ -397,6 +566,22 @@ namespace ICSharpCode.AvalonEdit
 			}
 		}
 
+		bool enableColorFont = true;
+
+		/// <summary>
+		/// Gets/Sets whether to enable color font in the editor.
+		/// </summary>
+		[DefaultValue(true)]
+		public virtual bool EnableColorFont {
+			get { return enableColorFont; }
+			set {
+				if (enableColorFont != value) {
+					enableColorFont = value;
+					OnPropertyChanged("EnableColorFont");
+				}
+			}
+		}
+		
 		bool showColumnRuler = false;
 
 		/// <summary>

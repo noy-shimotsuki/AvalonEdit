@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.0;net40;net45</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net40;net45;net46</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <DefineConstants>TRACE</DefineConstants>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ICSharpCode.AvalonEdit.snk</AssemblyOriginatorKeyFile>
     <DocumentationFile>ICSharpCode.AvalonEdit.xml</DocumentationFile>
     <Company>ic#code</Company>
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;DOTNET4_6</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <DefineConstants>TRACE</DefineConstants>
@@ -38,25 +38,34 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <DefineConstants>TRACE;DOTNET4_6</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
   <ItemGroup>
     <None Remove="Search\next.png" />
     <None Remove="Search\prev.png" />
     <None Remove="themes\RightArrow.cur" />
+    <None Remove="themes\RightArrow_high.cur" />
     <Resource Include="Search\next.png" />
     <Resource Include="Search\prev.png" />
     <Resource Include="themes\RightArrow.cur" />
+    <Resource Include="themes\RightArrow_high.cur" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Highlighting\Resources\*" />
     <EmbeddedResource Include="Highlighting\Resources\*" />
     <EmbeddedResource Remove="Highlighting\Resources\Resources.cs" />
     <Resource Include="Highlighting\Resources\Resources.cs" />
+    <PackageReference Include="Emoji.Wpf" Version="0.0.18-experimental" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
